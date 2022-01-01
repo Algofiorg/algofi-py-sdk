@@ -798,5 +798,5 @@ class AlgofiMainnetClient(Client):
         if algod_client is None:
             algod_client = AlgodClient('', 'https://algoexplorerapi.io', headers={'User-Agent': 'algosdk'})
         if indexer_client is None:
-            indexer_client = IndexerClient("", "https://algoexplorerapi.io/idx2", headers={'User-Agent': 'algosdk'})
+            indexer_client = IndexerClient("", "https://algoindexer.algoexplorerapi.io/v2", headers={'User-Agent': 'algosdk'})
         super().__init__(algod_client, indexer_client=indexer_client, user_address=user_address, chain="mainnet")
