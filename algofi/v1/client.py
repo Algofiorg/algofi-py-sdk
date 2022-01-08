@@ -781,7 +781,7 @@ class AlgofiTestnetClient(Client):
         if algod_client is None:
             algod_client = AlgodClient('', 'https://api.testnet.algoexplorer.io', headers={'User-Agent': 'algosdk'})
         if indexer_client is None:
-            indexer_client = IndexerClient("", "https://testnet.algoexplorerapi.io/idx2", headers={'User-Agent': 'algosdk'})
+            indexer_client = IndexerClient("", "https://algoindexer.testnet.algoexplorerapi.io", headers={'User-Agent': 'algosdk'})
         super().__init__(algod_client, indexer_client=indexer_client, historical_indexer_client=historical_indexer_client, user_address=user_address, chain="testnet")
 
 class AlgofiMainnetClient(Client):
@@ -799,5 +799,5 @@ class AlgofiMainnetClient(Client):
         if algod_client is None:
             algod_client = AlgodClient('', 'https://algoexplorerapi.io', headers={'User-Agent': 'algosdk'})
         if indexer_client is None:
-            indexer_client = IndexerClient("", "https://algoexplorerapi.io/idx2", headers={'User-Agent': 'algosdk'})
+            indexer_client = IndexerClient("", "https://algoindexer.algoexplorerapi.io", headers={'User-Agent': 'algosdk'})
         super().__init__(algod_client, indexer_client=indexer_client, historical_indexer_client=historical_indexer_client, user_address=user_address, chain="mainnet")
