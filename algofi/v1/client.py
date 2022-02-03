@@ -320,25 +320,28 @@ class Client:
     # INDEXER HELPERS
 
     def get_storage_accounts(self, staking_contract_name=None):
-        """Returns a list of storage accounts for the given manager app id
+        """Returns a list of storage accounts for protocol or for a given staking contract.
 
-        :return: list of storage accounts
+        :param staking_contract_name: staking contract name, optional
+        :type staking_contract_name: string
+        :return: list of storage accounts opted into protocol or staking contract
         :rtype: list
         """
-        next_page = ""
+        nextpage = ""
         accounts = []
         if staking_contract_name is None:
-            app_id = list(self.get_active_markets().values())[0].get_market_app_id()
+            app_id = self.manager.get_manager_app_id()
         else:
             app_id = self.get_staking_contract(staking_contract_name).get_manager_app_id()
-        while next_page is not None:
-            print(next_page)
-            account_data = self.indexer.accounts(next_page=next_page, application_id=app_id)
-            accounts.extend([account["address"] for account in account_data["accounts"]])
-            if "next-token" in account_data:
-                next_page = account_data["next-token"]
+        while nextpage is not None:
+            transaction_data = self.indexer.search_transactions(next_page=nextpage, txn_type="appl", application_id=app_id, rekey_to=True)
+            transactions = transaction_data["transactions"]
+            transactions = list(filter(lambda x: x["application-transaction"]["on-completion"] == "optin", transactions))
+            accounts.extend([x["sender"] for x in transactions])
+            if "next-token" in transaction_data:
+                nextpage = transaction_data["next-token"]
             else:
-                next_page = None
+                nextpage = None
         return accounts
 
     # TRANSACTION HELPERS
