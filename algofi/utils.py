@@ -184,7 +184,7 @@ def read_local_state(indexer_client, address, app_id, block=None):
     return {}
 
 
-def read_global_state(indexer_client, app_id, block=None):
+def read_global_state(api_client, app_id, block=None):
     """Returns dict of global state for application with the given app_id
 
     :param indexer_client: indexer client
@@ -198,7 +198,7 @@ def read_global_state(indexer_client, app_id, block=None):
     """
 
     try:
-        application_info = indexer_client.applications(app_id, round_num=block).get("application", {})
+        application_info = api_client.application_info(app_id, round_num=block)
     except:
         raise Exception("Application does not exist.")
 

@@ -3,13 +3,14 @@ import base64
 from algosdk import encoding, logic
 from algosdk.v2client.algod import AlgodClient
 from algosdk.v2client.indexer import IndexerClient
+from .api_client import ApiClient
 from ..utils import read_local_state, read_global_state, get_global_state_field, SCALE_FACTOR
 from ..contract_strings import algofi_manager_strings as manager_strings
 from ..contract_strings import algofi_market_strings as market_strings
 from .rewards_program import RewardsProgram
 
 class Manager:
-    def __init__(self, indexer_client: IndexerClient, historical_indexer_client: IndexerClient, manager_app_id):
+    def __init__(self, api_client: ApiClient, manager_app_id):
         """Constructor method for manager object.
 
         :param indexer_client: a :class:`IndexerClient` for interacting with the network
@@ -20,8 +21,9 @@ class Manager:
         :type manager_app_id: int
         """
 
-        self.indexer = indexer_client
-        self.historical_indexer = historical_indexer_client
+        self.indexer = api_client.indexer
+        self.historical_indexer = api_client.historical_indexer
+        self.api_client = api_client
 
         self.manager_app_id = manager_app_id
         self.manager_address = logic.get_application_address(self.manager_app_id)
@@ -35,8 +37,7 @@ class Manager:
         :param block: block at which to get historical data
         :type block: int, optional
         """
-        indexer_client = self.historical_indexer if block else self.indexer
-        manager_state = read_global_state(indexer_client, self.manager_app_id, block=block)
+        manager_state = read_global_state(self.api_client, self.manager_app_id, block=block)
         self.rewards_program = RewardsProgram(self.indexer, self.historical_indexer, manager_state)
         self.supported_market_count = manager_state.get(manager_strings.supported_market_count, None)
 

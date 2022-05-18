@@ -9,6 +9,7 @@ get_manager_app_id, get_market_app_id, get_init_round, get_staking_contracts
 from ..contract_strings import algofi_manager_strings as manager_strings
 from ..contract_strings import algofi_market_strings as market_strings
 
+from .api_client import ApiClient
 from .manager import Manager
 from .market import Market
 from .staking_contract import StakingContract
@@ -38,7 +39,8 @@ from .staking import prepare_staking_contract_optin_transactions, \
 
 class Client:
 
-    def __init__(self, algod_client: AlgodClient, indexer_client: IndexerClient, historical_indexer_client: IndexerClient, user_address, chain):
+    def __init__(self, algod_client: AlgodClient, indexer_client: IndexerClient,
+                 historical_indexer_client: IndexerClient, user_address, chain, use_indexer=True):
         """Constructor method for the generic client.
 
         :param algod_client: a :class:`AlgodClient` for interacting with the network
@@ -62,6 +64,7 @@ class Client:
         self.algod = algod_client
         self.indexer = indexer_client
         self.historical_indexer = historical_indexer_client
+        self.api_client = ApiClient(algod_client, indexer_client, historical_indexer_client, use_indexer)
         self.chain = chain
 
         # user info
@@ -1029,7 +1032,7 @@ class Client:
 
 
 class AlgofiTestnetClient(Client):
-    def __init__(self, algod_client=None, indexer_client=None, user_address=None):
+    def __init__(self, algod_client=None, indexer_client=None, user_address=None, use_indexer=True):
         """Constructor method for the testnet generic client.
 
         :param algod_client: a :class:`AlgodClient` for interacting with the network
@@ -1044,10 +1047,11 @@ class AlgofiTestnetClient(Client):
             algod_client = AlgodClient("", "https://node.testnet.algoexplorerapi.io", headers={"User-Agent": "algosdk"})
         if indexer_client is None:
             indexer_client = IndexerClient("", "https://algoindexer.testnet.algoexplorerapi.io", headers={"User-Agent": "algosdk"})
-        super().__init__(algod_client, indexer_client=indexer_client, historical_indexer_client=historical_indexer_client, user_address=user_address, chain="testnet")
+        super().__init__(algod_client, indexer_client=indexer_client, historical_indexer_client=historical_indexer_client,
+                         user_address=user_address, chain="testnet", use_indexer=use_indexer)
 
 class AlgofiMainnetClient(Client):
-    def __init__(self, algod_client=None, indexer_client=None, user_address=None):
+    def __init__(self, algod_client=None, indexer_client=None, user_address=None, use_indexer=True):
         """Constructor method for the mainnet generic client.
 
         :param algod_client: a :class:`AlgodClient` for interacting with the network
@@ -1062,4 +1066,5 @@ class AlgofiMainnetClient(Client):
             algod_client = AlgodClient("", "https://node.algoexplorerapi.io", headers={"User-Agent": "algosdk"})
         if indexer_client is None:
             indexer_client = IndexerClient("", "https://algoindexer.algoexplorerapi.io", headers={"User-Agent": "algosdk"})
-        super().__init__(algod_client, indexer_client=indexer_client, historical_indexer_client=historical_indexer_client, user_address=user_address, chain="mainnet")
+        super().__init__(algod_client, indexer_client=indexer_client, historical_indexer_client=historical_indexer_client,
+                         user_address=user_address, chain="mainnet", use_indexer=use_indexer)
