@@ -52,12 +52,12 @@ class Client:
         :param chain: network type
         :type chain: string
         """
-        
+
         # constants
         self.SCALE_FACTOR = 1e9
         self.BORROW_SHARES_INIT = 1e3
         self.PARAMETER_SCALE_FACTOR = 1e3
-        
+
         # clients info
         self.algod = algod_client
         self.indexer = indexer_client
@@ -71,17 +71,17 @@ class Client:
         self.active_ordered_symbols = get_ordered_symbols(self.chain)
         self.max_ordered_symbols = get_ordered_symbols(self.chain, max=True)
         self.max_atomic_opt_in_ordered_symbols = get_ordered_symbols(self.chain, max_atomic_opt_in=True)
-        
+
         # manager info
-        self.manager = Manager(self.indexer, self.historical_indexer, get_manager_app_id(self.chain))
-        
+        self.manager = Manager(self.api_client, get_manager_app_id(self.chain))
+
         # market info
         self.markets = {symbol : Market(self.indexer, self.historical_indexer, get_market_app_id(self.chain, symbol)) for symbol in self.max_ordered_symbols}
-        
+
         # staking contract info
         self.staking_contract_info = get_staking_contracts(self.chain)
         self.staking_contracts = {name : StakingContract(self.indexer, self.historical_indexer, self.staking_contract_info[name]) for name in self.staking_contract_info.keys()}
-        
+
     # HELPER FUNCTIONS
 
     def get_default_params(self):
@@ -93,7 +93,7 @@ class Client:
         return params
 
     # USER STATE GETTERS
-    
+
     def get_user_info(self, address=None):
         """Returns a dictionary of information about the user
 
@@ -106,7 +106,7 @@ class Client:
             address = self.user_address
         if address:
             try:
-                user_info = self.indexer.account_info(address).get("account", {})
+                user_info = self.api_client.account_info(address)
                 if "apps-local-state" not in user_info:
                     user_info["apps-local-state"] = []
                 if "assets" not in user_info:
@@ -116,7 +116,7 @@ class Client:
                 raise Exception("Account does not exist with address " + address + ".")
         else:
             raise Exception("user_address has not been specified")
-    
+
     def is_opted_into_app(self, app_id, address=None):
         """Returns a boolean if the user address is opted into an application with id app_id
 
@@ -131,7 +131,7 @@ class Client:
             address = self.user_address
         user_info = self.get_user_info(address)
         return app_id in [x['id'] for x in user_info['apps-local-state']]
-    
+
     def is_opted_into_asset(self, asset_id, address=None):
         """Returns a boolean if the user address is opted into an asset with id asset_id
 
@@ -147,7 +147,7 @@ class Client:
         user_info = self.get_user_info(address)
         assets = user_info.get("assets", [])
         return asset_id in [x['asset-id'] for x in assets]
-    
+
     def get_user_balances(self, address=None):
         """Returns a dictionary of user balances by asset id
 
@@ -162,7 +162,7 @@ class Client:
         balances = {asset["asset-id"] : asset["amount"] for asset in user_info["assets"]}
         balances[1] = user_info["amount"]
         return balances
-    
+
     def get_user_balance(self, asset_id=1, address=None):
         """Returns a amount of asset in user's balance with asset id asset_id
 
@@ -176,7 +176,7 @@ class Client:
         if not address:
             address = self.user_address
         return self.get_user_balances(address).get(asset_id, 0)
-    
+
     def get_user_state(self, address=None):
         """Returns a dictionary with the lending market state for a given address (must be opted in)
 
@@ -193,7 +193,7 @@ class Client:
         for symbol in self.active_ordered_symbols:
             result[symbol] = self.markets[symbol].get_storage_state(storage_address)
         return result
-    
+
     def get_storage_state(self, storage_address=None, block=None, include_manager=True):
         """Returns a dictionary with the lending market state for a given storage address
 
@@ -213,7 +213,7 @@ class Client:
         for symbol in active_markets:
             result[symbol] = self.markets[symbol].get_storage_state(storage_address, block=block)
         return result
-    
+
     def get_user_staking_contract_state(self, staking_contract_name, address=None):
         """Returns a dictionary with the staking contract state for the named staking contract and selected address
 
@@ -238,7 +238,7 @@ class Client:
         :rtype: :class:`Manager`
         """
         return self.manager
-    
+
     def get_market(self, symbol):
         """Returns the market object for the given symbol
 
@@ -248,15 +248,15 @@ class Client:
         :rtype: :class:`Market`
         """
         return self.markets[symbol]
-    
+
     def get_active_markets(self):
         """Returns dictionary of active markets by symbol
-        
+
         :return: markets dictionary
         :rtype: dict
         """
         return dict(filter(lambda elem: elem[0] in self.active_ordered_symbols, self.markets.items()))
-    
+
     def get_staking_contract(self, name):
         """Returns the manager object
 
@@ -294,14 +294,14 @@ class Client:
         :rtype: list
         """
         return [self.markets[symbol].get_market_app_id() for symbol in self.max_atomic_opt_in_ordered_symbols]
-    
+
     def get_active_assets(self):
         """Returns a dictionary of the asset objects for each active market
-        
+
         :return: dictionary of asset objects
         """
         return {symbol : market.get_asset() for symbol, market in self.get_active_markets().items()}
-    
+
     def get_active_asset_ids(self):
         """Returns the active asset ids.
 
@@ -309,7 +309,7 @@ class Client:
         :rtype: list
         """
         return [asset.get_underlying_asset_id() for asset in self.get_active_assets().values()]
-   
+
     def get_active_bank_asset_ids(self):
         """Returns the active bank asset ids.
 
@@ -317,7 +317,7 @@ class Client:
         :rtype: list
         """
         return [asset.get_bank_asset_id() for asset in self.get_active_assets().values()]
-    
+
     def get_active_ordered_symbols(self):
         """Returns the list of symbols of the active assets
 
@@ -382,7 +382,7 @@ class Client:
         return accounts
 
     # TRANSACTION HELPERS
-    
+
     def get_active_oracle_app_ids(self):
         """Returns the list of active oracle app ids
 
@@ -390,7 +390,7 @@ class Client:
         :rtype: list
         """
         return [market.get_asset().get_oracle_app_id() for market in self.get_active_markets().values()]
-        
+
     def get_active_market_app_ids(self):
         """Returns the list of the active market app ids
 
@@ -408,10 +408,10 @@ class Client:
         return [market.get_market_address() for market in self.get_active_markets().values()]
 
     # TRANSACTION BUILDERS
-    
+
     def prepare_optin_transactions(self, storage_address, address=None):
         """Returns an opt in transaction group
-        
+
         :param storage_address: storage address to fund and rekey
         :type address: string
         :param address: defaults to client user address. address to send add_collateral transaction group from
@@ -429,7 +429,7 @@ class Client:
 
     def prepare_add_collateral_transactions(self, symbol, amount, address=None):
         """Returns an add_collateral transaction group
-        
+
         :param symbol: symbol to add collateral with
         :type symbol: string
         :param amount: amount of collateral to add
@@ -456,7 +456,7 @@ class Client:
 
     def prepare_borrow_transactions(self, symbol, amount, address=None):
         """Returns a borrow transaction group
-        
+
         :param symbol: symbol to borrow
         :type symbol: string
         :param amount: amount to borrow
@@ -483,7 +483,7 @@ class Client:
 
     def prepare_burn_transactions(self, symbol, amount, address=None):
         """Returns a burn transaction group
-        
+
         :param symbol: symbol to burn
         :type symbol: string
         :param amount: amount of bAsset to burn
@@ -530,7 +530,7 @@ class Client:
     def prepare_liquidate_transactions(self, target_storage_address, borrow_symbol, amount, collateral_symbol, address=None):
         """Returns a liquidate transaction group
         NOTE: seizing vALGO collateral returns ALGOs not bAssets. all other markets return bAssets.
-        
+
         :param target_storage_address: storage address to liquidate
         :type target_storage_address: string
         :param borrow_symbol: symbol to repay
@@ -567,7 +567,7 @@ class Client:
 
     def prepare_mint_transactions(self, symbol, amount, address=None):
         """Returns a mint transaction group
-        
+
         :param symbol: symbol to mint
         :type symbol: string
         :param amount: amount of mint
@@ -595,7 +595,7 @@ class Client:
 
     def prepare_mint_to_collateral_transactions(self, symbol, amount, address=None):
         """Returns a mint_to_collateral transaction group
-        
+
         :param symbol: symbol to mint to collateral
         :type symbol: string
         :param amount: amount to mint to collateral
@@ -621,7 +621,7 @@ class Client:
 
     def prepare_remove_collateral_transactions(self, symbol, amount, address=None):
         """Returns a remove_collateral transaction group
-        
+
         :param symbol: symbol to remove collateral from
         :type symbol: string
         :param amount: amount of collateral to remove
@@ -647,7 +647,7 @@ class Client:
 
     def prepare_remove_collateral_underlying_transactions(self, symbol, amount, address=None):
         """Returns a remove_collateral_underlying transaction group
-        
+
         :param symbol: symbol to remove collateral from
         :type symbol: string
         :param amount: amount of collateral to remove
@@ -672,7 +672,7 @@ class Client:
 
     def prepare_repay_borrow_transactions(self, symbol, amount, address=None):
         """Returns a repay_borrow transaction group
-        
+
         :param symbol: symbol to repay
         :type symbol: string
         :param amount: amount of repay
@@ -698,10 +698,10 @@ class Client:
                                                  market.get_asset().get_underlying_asset_id() if symbol != "ALGO" else None)
 
     # STAKING TRANSACTION BUILDERS
-    
+
     def prepare_staking_contract_optin_transactions(self, staking_contract_name, storage_address, address=None):
         """Returns a staking contract optin transaction group
-        
+
         :param staking_contract_name: name of staking contract to opt in to
         :type staking_contract_name: string
         :param storage_address: storage address to fund and rekey
@@ -722,7 +722,7 @@ class Client:
 
     def prepare_stake_transactions(self, staking_contract_name, amount, address=None):
         """Returns a staking contract stake transaction group
-        
+
         :param staking_contract_name: name of staking contract to stake on
         :type staking_contract_name: string
         :param amount: amount of stake
@@ -748,7 +748,7 @@ class Client:
 
     def prepare_unstake_transactions(self, staking_contract_name, amount, address=None):
         """Returns a staking contract unstake transaction group
-        
+
         :param staking_contract_name: name of staking contract to unstake on
         :type staking_contract_name: string
         :param amount: amount of unstake
@@ -773,7 +773,7 @@ class Client:
 
     def prepare_claim_staking_rewards_transactions(self, staking_contract_name, address=None):
         """Returns a staking contract claim rewards transaction group
-        
+
         :param staking_contract_name: name of staking contract to unstake on
         :type staking_contract_name: string
         :param address: defaults to client user address. address to send claim rewards transaction group from
@@ -860,19 +860,19 @@ class Client:
                                                self.get_active_oracle_app_ids())
 
     def prepare_send_governance_commitment_transactions(self, governance_address, commitment_amount, address=None, beneficiary=None, check_vault_balance=True):
-        """Returns a send governance commitment group transaction. A zero-value PaymentTxn with formatted notes field. 
-        Format for notes field can be found within Algorand Foundation Governance Spec at 
+        """Returns a send governance commitment group transaction. A zero-value PaymentTxn with formatted notes field.
+        Format for notes field can be found within Algorand Foundation Governance Spec at
         <https://github.com/algorandfoundation/governance/blob/main/af-gov1-spec.md>
 
-        :param governance_address: governance address to send commitment txn to. Get governance address from <https://governance.algorand.foundation/api/periods> 
+        :param governance_address: governance address to send commitment txn to. Get governance address from <https://governance.algorand.foundation/api/periods>
         within the relevant period "sign_up_address"
         :type governance_address: string
         :param commitment_amount: amount of ALGOs (in microalgos) to commit to governance
         :type commitment_amount: int
-        :param address: defaults to client user address. address to send send governance commitment transaction group from. 
+        :param address: defaults to client user address. address to send send governance commitment transaction group from.
         this is the primary account address for Algofi, not the vault account address from which the commitment inner transaction will originate.
         :type address: string, optional
-        :param beneficiary: specify a beneficiary of the governance rewards. governance rewards will be sent from the Algorand Foundation 
+        :param beneficiary: specify a beneficiary of the governance rewards. governance rewards will be sent from the Algorand Foundation
         to this address at the end of governance if the vault account is eligible for rewards.
         :type beneficiary: string, optional
         :param check_vault_balance: checks the ALGO balance of the Vault. raises exception if commitment amount > the ALGO balance of the Vault account.
@@ -909,16 +909,16 @@ class Client:
                                                     self.manager.get_manager_app_id(),
                                                     self.get_active_market_app_ids(),
                                                     self.get_active_oracle_app_ids())
-    
+
     def prepare_send_governance_vote_transactions(self, governance_address, note, address=None):
-        """Returns a send governance vote group transaction. A zero-value PaymentTxn with formatted notes field. 
-        Format for voting notes field can be found within Algorand Foundation Governance Spec at 
+        """Returns a send governance vote group transaction. A zero-value PaymentTxn with formatted notes field.
+        Format for voting notes field can be found within Algorand Foundation Governance Spec at
         <https://github.com/algorandfoundation/governance/blob/main/af-gov1-spec.md>
 
-        :param governance_address: governance address to send vote txn to. Get governance address from <https://governance.algorand.foundation/api/periods> 
+        :param governance_address: governance address to send vote txn to. Get governance address from <https://governance.algorand.foundation/api/periods>
         within the relevant period "sign_up_address"
         :type governance_address: string
-        :param note: notes field for voting in governance. see spec for voting notes field at 
+        :param note: notes field for voting in governance. see spec for voting notes field at
         https://github.com/algorandfoundation/governance/blob/main/af-gov1-spec.md
         format is af/gov1:j[idx,q1,q2,...]
         idx is the voting session index which can be found at https://governance.algorand.foundation/api/periods
@@ -926,11 +926,11 @@ class Client:
         q1,q2 are votes to the specific measures within a given voting session
         example 1 (vote with all ALGOs on choice "a" in measure 1 and choice "c" in measure 2): af/gov1:j[4,"a","c"]
         example 2 (vote choice "a" with 100 microalgos and choice "b" with 900 microalgos in measure 1; vote choice "c" with all microalgos in measure 2): af/gov1:j[4,{"a":100,"b":900},"c"]
-        NOTE: in example 2, voting with less than full commitment requires that the full commitment is distributing across all choices. for example, if 
-        you commit 1000 microalgos via the Vault, during voting you must use all 1000 microalgos in voting. in a 2-choice vote, you could not vote choice "a" 
+        NOTE: in example 2, voting with less than full commitment requires that the full commitment is distributing across all choices. for example, if
+        you commit 1000 microalgos via the Vault, during voting you must use all 1000 microalgos in voting. in a 2-choice vote, you could not vote choice "a"
         with 100 and choice "b" with 899 microalgos. the sum must be 1000 microalgos (100 + 899 = 999 != 1000)
         :type note: bytes
-        :param address: defaults to client user address. address to send send governance vote transaction group from. 
+        :param address: defaults to client user address. address to send send governance vote transaction group from.
         this is the primary account address for Algofi, not the vault account address from which the vote inner transaction will originate.
         :type address: string, optional
         :return: send governance vote transaction group
@@ -948,7 +948,7 @@ class Client:
                                                     self.manager.get_manager_app_id(),
                                                     self.get_active_market_app_ids(),
                                                     self.get_active_oracle_app_ids())
-    
+
     def prepare_send_keyreg_online_transactions(self, vote_pk, selection_pk, state_proof_pk, vote_first, vote_last, vote_key_dilution, address=None):
         """Returns a send keyreg online group transaction
 
@@ -984,7 +984,7 @@ class Client:
                                                        self.manager.get_manager_app_id(),
                                                        self.get_active_market_app_ids(),
                                                        self.get_active_oracle_app_ids())
-    
+
     def prepare_send_keyreg_offline_transactions(self, address=None):
         """Returns a send keyreg offline group transaction
 
@@ -1008,7 +1008,7 @@ class Client:
     # TRANSACTION SUBMITTER
 
     def submit(self, transaction_group, wait=False):
-        """Submits group transaction to network + waits for completion if specified. Fails if transaction 
+        """Submits group transaction to network + waits for completion if specified. Fails if transaction
         fails or wait operation times out.
 
         :param transaction_group: a list of signed transactions
@@ -1026,12 +1026,12 @@ class Client:
             return wait_for_confirmation(self.algod, txid)
         return {'txid': txid}
 
-    
-    
+
+
 class AlgofiTestnetClient(Client):
     def __init__(self, algod_client=None, indexer_client=None, user_address=None):
         """Constructor method for the testnet generic client.
-        
+
         :param algod_client: a :class:`AlgodClient` for interacting with the network
         :type algod_client: :class:`AlgodClient`
         :param indexer_client: a :class:`IndexerClient` for interacting with the network
@@ -1049,7 +1049,7 @@ class AlgofiTestnetClient(Client):
 class AlgofiMainnetClient(Client):
     def __init__(self, algod_client=None, indexer_client=None, user_address=None):
         """Constructor method for the mainnet generic client.
-        
+
         :param algod_client: a :class:`AlgodClient` for interacting with the network
         :type algod_client: :class:`AlgodClient`
         :param indexer_client: a :class:`IndexerClient` for interacting with the network

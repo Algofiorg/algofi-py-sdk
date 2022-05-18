@@ -25,10 +25,10 @@ class Manager:
 
         self.manager_app_id = manager_app_id
         self.manager_address = logic.get_application_address(self.manager_app_id)
-        
+
         # read market global state
         self.update_global_state()
-    
+
     def update_global_state(self, block=None):
         """Method to fetch most recent manager global state.
 
@@ -39,12 +39,12 @@ class Manager:
         manager_state = read_global_state(indexer_client, self.manager_app_id, block=block)
         self.rewards_program = RewardsProgram(self.indexer, self.historical_indexer, manager_state)
         self.supported_market_count = manager_state.get(manager_strings.supported_market_count, None)
-    
+
     # GETTERS
-    
+
     def get_manager_app_id(self):
         """Return manager app id
-        
+
         :return: manager app id
         :rtype: int
         """
@@ -52,7 +52,7 @@ class Manager:
 
     def get_manager_address(self):
         """Return manager address
-        
+
         :return: manager address
         :rtype: string
         """
@@ -60,15 +60,15 @@ class Manager:
 
     def get_rewards_program(self):
         """Return a list of current rewards program
-        
+
         :return: rewards program
         :rtype: :class:`RewardsProgram
         """
         return self.rewards_program
-    
+
     def get_supported_market_count(self, block=None):
         """Return the supported market count
-        
+
         :param block: block at which to get historical data
         :type block: int, optional
         :return: supported market count
@@ -80,7 +80,7 @@ class Manager:
             return self.supported_market_count
 
     # USER FUNCTIONS
-    
+
     def get_storage_address(self, address):
         """Returns the storage address for the client user
 
@@ -94,7 +94,7 @@ class Manager:
         if not raw_storage_address:
             raise Exception("No storage address found")
         return encoding.encode_address(base64.b64decode(raw_storage_address.strip()))
-    
+
     def get_user_state(self, address, block=None):
         """Returns the market local state for address.
 
@@ -107,7 +107,7 @@ class Manager:
         """
         storage_address = self.get_storage_address(address)
         return self.get_storage_state(storage_address, block=block)
-    
+
     def get_storage_state(self, storage_address, block=None):
         """Returns the market local state for storage address.
 
@@ -121,13 +121,13 @@ class Manager:
         result = {}
         indexer_client = self.historical_indexer if block else self.indexer
         user_state = read_local_state(indexer_client, storage_address, self.manager_app_id, block=block)
-        result["user_global_max_borrow_in_dollars"] = user_state.get(manager_strings.user_global_max_borrow_in_dollars, 0) 
+        result["user_global_max_borrow_in_dollars"] = user_state.get(manager_strings.user_global_max_borrow_in_dollars, 0)
         result["user_global_borrowed_in_dollars"] = user_state.get(manager_strings.user_global_borrowed_in_dollars, 0)
         return result
-    
+
     def get_user_unrealized_rewards(self, address, markets):
         """Returns projected unrealized rewards for a user address
-        
+
         :param address: account address of user to get unrealized rewards for
         :type address: string
         :param markets: list of markets to get unrealized rewards for

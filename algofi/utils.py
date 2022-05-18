@@ -83,13 +83,13 @@ def sign_and_submit_transactions(client, transactions, signed_transactions, send
     for i, txn in enumerate(transactions):
         if txn.sender == sender:
             signed_transactions[i] = txn.sign(sender_sk)
-    
+
     txid = client.send_transactions(signed_transactions)
     return wait_for_confirmation(client, txid)
 
 
 def wait_for_confirmation(client, txid):
-    """Waits for a transaction with id txid to complete. Returns dict with transaction information 
+    """Waits for a transaction with id txid to complete. Returns dict with transaction information
     after completion.
 
     :param client: algod client
@@ -170,7 +170,7 @@ def read_local_state(indexer_client, address, app_id, block=None):
     :return: dict of local state of address for application with id app_id
     :rtype: dict
     """
-    
+
     try:
         results = indexer_client.account_info(address, round_num=block).get("account", {})
     except:
@@ -234,7 +234,7 @@ def get_staking_contracts(chain):
     """
     with open(CONTRACTS_FPATH, 'r') as contracts_file:
         json_file = json.load(contracts_file)[chain]
-        staking_contracts = json_file["STAKING_CONTRACTS"] 
+        staking_contracts = json_file["STAKING_CONTRACTS"]
         return staking_contracts
 
 
@@ -255,7 +255,7 @@ def get_ordered_symbols(chain, max=False, max_atomic_opt_in=False):
         elif max_atomic_opt_in:
             supported_market_count = json_file["maxAtomicOptInMarketCount"]
         else:
-            supported_market_count = json_file["supportedMarketCount"] 
+            supported_market_count = json_file["supportedMarketCount"]
         return json_file['SYMBOLS'][:supported_market_count]
 
 
@@ -300,7 +300,7 @@ def get_init_round(chain):
 
 
 def prepare_payment_transaction(sender, suggested_params, receiver, amount, rekey_to=None):
-    """Returns a :class:`TransactionGroup` object representing a payment group transaction 
+    """Returns a :class:`TransactionGroup` object representing a payment group transaction
     for a given sender, receiver, amount and ability to rekey.
 
     :param sender: account address for the sender
@@ -360,7 +360,7 @@ class TransactionGroup:
         """
         for i, txn in enumerate(self.transactions):
             self.signed_transactions[i] = txn.sign(private_key)
-    
+
     def sign_with_private_keys(self, private_keys):
         """Signs the transactions with specified list of private keys and saves to class state
 
@@ -370,7 +370,7 @@ class TransactionGroup:
         assert(len(private_keys) == len(self.transactions))
         for i, txn in enumerate(self.transactions):
             self.signed_transactions[i] = txn.sign(private_keys[i])
-        
+
     def submit(self, algod, wait=False):
         """Submits the signed transactions to network using the algod client
 
@@ -408,4 +408,4 @@ def get_accounts_opted_into_app(indexer, app_id):
             next_page = account_data["next-token"]
         else:
             next_page = None
-    return accounts 
+    return accounts
