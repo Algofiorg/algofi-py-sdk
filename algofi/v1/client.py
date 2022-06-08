@@ -94,11 +94,13 @@ class Client:
 
     # USER STATE GETTERS
     
-    def get_user_info(self, address=None):
+    def get_user_info(self, address=None, block=None):
         """Returns a dictionary of information about the user
 
         :param address: address to get info for
         :type address: string
+        :param block: block to query historically
+        :type block: int, optional
         :return: A dict of information of the user
         :rtype: dict
         """
@@ -106,7 +108,10 @@ class Client:
             address = self.user_address
         if address:
             try:
-                user_info = self.indexer.account_info(address).get("account", {})
+                if block:
+                    user_info = self.historical_indexer.account_info(address, round_num=block).get("account", {})
+                else:
+                    user_info = self.indexer.account_info(address).get("account", {})
                 if "apps-local-state" not in user_info:
                     user_info["apps-local-state"] = []
                 if "assets" not in user_info:
@@ -148,11 +153,13 @@ class Client:
         assets = user_info.get("assets", [])
         return asset_id in [x['asset-id'] for x in assets]
     
-    def get_user_balances(self, address=None):
+    def get_user_balances(self, address=None, block=None):
         """Returns a dictionary of user balances by asset id
 
         :param address: address to get info for
         :type address: string
+        :param block: block to query historically
+        :type block: int, optional
         :return: amount of asset
         :rtype: int
         """
